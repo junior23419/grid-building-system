@@ -5,7 +5,7 @@ using UnityEngine.UI;
 public class BuildingManager : MonoBehaviour
 {
 
-    public enum MODE { NONE, BUILDING,REMOVING};
+    public enum MODE { NONE, BUILDING,REMOVING,MOVING};
     MODE mode;
     [SerializeField] Text modeText;
     [SerializeField] GameObject[] previews;
@@ -13,64 +13,53 @@ public class BuildingManager : MonoBehaviour
     [SerializeField] GameObject buildingsParent;
     [SerializeField] Material[] materials;
     int currentPreview = -1;
-
-
+    [HideInInspector] public bool deployable = true;
+    GameObject movingTarget;
     GameObject lastRayCastted;
     Material lastMaterial;
 
     void Start()
     {
-
         mode = MODE.NONE;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            StartBuildAndShowPreview(0);
-        }
-        if(Input.GetKeyDown(KeyCode.Escape))
-        {
-            StopBuilding();
-        }
-        if(Input.GetKeyDown(KeyCode.R))
-        {
-            SetModeRemove();
-        }
+        //if(Input.GetKeyDown(KeyCode.Alpha1))
+        //{
+        //    StartBuildAndShowPreview(0);
+        //}
+        //if(Input.GetKeyDown(KeyCode.Escape))
+        //{
+        //    StopBuilding();
+        //}
+        //if(Input.GetKeyDown(KeyCode.R))
+        //{
+        //    SetModeRemove();
+        //}
 
-        if (mode == MODE.REMOVING) 
+        if (mode == MODE.REMOVING || mode == MODE.MOVING) 
         {
             RayToBuilding();
         }
     }
 
-    public void SetModeRemove()
+    public void SetModeMove()
     {
-        mode = MODE.REMOVING;
-        modeText.text = mode.ToString();
+        SwitchMode(MODE.MOVING);
     }
 
-    public void StopBuilding()
+    public void SetModeRemove()
     {
-        if(mode == MODE.BUILDING)
-        {
-            previews[currentPreview].SetActive(false);
-        }
-        else if(mode == MODE.REMOVING && lastRayCastted != null)
-        {
-            ClearRemovingModeSetup();
-        }
-        mode = MODE.NONE;
-        modeText.text = mode.ToString();
+        SwitchMode(MODE.REMOVING);
     }
+
 
     public void StartBuildAndShowPreview(int itemIndex)
     {
+        SwitchMode(MODE.BUILDING);
         currentPreview = itemIndex;
-        mode = MODE.BUILDING;
-        modeText.text = mode.ToString();
         previews[itemIndex].SetActive(true);
     }
 
@@ -79,7 +68,7 @@ public class BuildingManager : MonoBehaviour
         GameObject building = Instantiate(prefabs[currentPreview], buildingsParent.transform);
         building.transform.position = previews[currentPreview].transform.position;
         building.transform.rotation = previews[currentPreview].transform.rotation;
-        StopBuilding();
+        SwitchMode(MODE.NONE);
     }
 
     public void RayToBuilding()
@@ -87,47 +76,46 @@ public class BuildingManager : MonoBehaviour
         RaycastHit hit;
 #if UNITY_EDITOR_WIN
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-#elif UNITY_IOS
-        Ray ray = Camera.main.ScreenPointToRay(Input.GetTouch(0).position);
-#elif UNITY_ANDROID
+#elif UNITY_IOS || UNITY_ANDROID
         Ray ray = Camera.main.ScreenPointToRay(Input.GetTouch(0).position);
 #endif
         int layerMask = 1 << 8 ;
+        
+#if UNITY_EDITOR_WIN
         if (Physics.Raycast(ray, out hit, Mathf.Infinity, layerMask) && hit.collider.tag == "Building")
+#elif UNITY_IOS || UNITY_ANDROID
+        if (Physics.Raycast(ray, out hit, Mathf.Infinity, layerMask) && hit.collider.tag == "Building" && Input.GetTouch(0).phase == TouchPhase.Began)
+#endif
         {
-            if (lastRayCastted == null || !GameObject.ReferenceEquals(lastRayCastted,hit.collider.gameObject))
+
+            if (lastRayCastted == null || !GameObject.ReferenceEquals(lastRayCastted, hit.collider.gameObject))
             {
                 if (lastRayCastted != null)
                 {
-                    lastRayCastted.GetComponent<Renderer>().material = lastMaterial;
+                    ClearRemovingModeSetup();
                 }
                 //set color of both;
                 lastMaterial = hit.transform.gameObject.GetComponent<Renderer>().material;
-                hit.transform.gameObject.GetComponent<Renderer>().material = materials[0];
-
+                hit.transform.gameObject.GetComponent<Renderer>().material = materials[mode == MODE.REMOVING ? 1 : 0];
+                if(mode == MODE.MOVING)
+                {
+                    hit.transform.parent.gameObject.GetComponent<Building>().isMoving = true;
+                    hit.transform.GetComponent<BuildingCollider>().activate = true;
+                }
                 //Set last material;
             }
-
-            if ( Input.GetMouseButtonDown(0))
-            {
-                Destroy(hit.transform.parent.gameObject);
-            }
-
             lastRayCastted = hit.collider.gameObject;
-
-        }
-        else // setcolor on ray exit object
-        {
-            if(lastRayCastted !=null)
-            {
-                ClearRemovingModeSetup();
-            }
+            
+            
+            
         }
     }
     
     private void ClearRemovingModeSetup()
     {
         lastRayCastted.GetComponent<Renderer>().material = lastMaterial;
+        lastRayCastted.transform.parent.GetComponent<Building>().isMoving = false;
+        lastRayCastted.transform.GetComponent<BuildingCollider>().activate = false;
         lastRayCastted = null;
     }
 
@@ -137,6 +125,18 @@ public class BuildingManager : MonoBehaviour
         {
             previews[currentPreview].GetComponent<Building>().Deploy();
         }
+        else if(mode == MODE.MOVING)
+        {
+            if (!deployable)
+                return;
+            ClearRemovingModeSetup();
+        }
+        else if(mode == MODE.REMOVING)
+        {
+            Destroy(lastRayCastted.transform.parent.gameObject);
+            lastRayCastted = null;
+        }
+        SwitchMode(MODE.NONE);
     }
 
     public void Rotate()
@@ -145,5 +145,41 @@ public class BuildingManager : MonoBehaviour
         {
             previews[currentPreview].GetComponent<Building>().Rotate();
         }
+        else if(mode == MODE.MOVING)
+        {
+            lastRayCastted.transform.parent.GetComponent<Building>().Rotate();
+        }
     }
+
+    public void Remove()
+    {
+        if (lastRayCastted)
+            Destroy(lastRayCastted);
+
+        lastRayCastted = null;
+    }
+
+    public void SetModeNone()
+    {
+        SwitchMode(MODE.NONE);
+    }
+
+    public void SwitchMode(MODE value)
+    {
+        if(lastRayCastted)
+        {
+            ClearRemovingModeSetup();
+            
+        }
+
+        if (currentPreview != -1)
+            previews[currentPreview].SetActive(false);
+
+
+        mode = value;
+
+        modeText.text = mode.ToString();
+    }
+
+
 }
