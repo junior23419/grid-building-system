@@ -96,20 +96,33 @@ public class BuildingManager : MonoBehaviour
                 {
                     ClearRemovingModeSetup();
                 }
+                lastRayCastted = hit.collider.gameObject;
                 //set color of both;
                 lastMaterial = hit.transform.gameObject.GetComponent<Renderer>().material;
-                hit.transform.gameObject.GetComponent<Renderer>().material = materials[mode == MODE.REMOVING ? 1 : 0];
+                Debug.Log("parent" + lastRayCastted.transform.parent.name);
+                foreach (Transform child in lastRayCastted.transform.parent)
+                {
+                    if(child.tag == "Building")
+                        child.gameObject.GetComponent<Renderer>().material = materials[mode == MODE.REMOVING ? 1 : 0];
+                }
+                //hit.transform.gameObject.GetComponent<Renderer>().material = materials[mode == MODE.REMOVING ? 1 : 0];
                 if(mode == MODE.MOVING)
                 {
                     lastPos = hit.transform.parent.position;
                     lastRotation = hit.transform.parent.rotation;
 
                     hit.transform.parent.gameObject.GetComponent<Building>().isMoving = true;
-                    hit.transform.GetComponent<BuildingCollider>().activate = true;
+                    //hit.transform.GetComponent<BuildingCollider>().activate = true;
+                    foreach (Transform child in lastRayCastted.transform.parent)
+                    {
+                        //child.GetComponent<Renderer>().material = lastMaterial;
+                        if (child.tag == "Building")
+                            child.gameObject.GetComponent<BuildingCollider>().activate = true;
+                    }
                 }
                 //Set last material;
             }
-            lastRayCastted = hit.collider.gameObject;
+            
             
             
             
@@ -124,9 +137,20 @@ public class BuildingManager : MonoBehaviour
             lastRayCastted.transform.parent.rotation = lastRotation;
 
         }
-        lastRayCastted.GetComponent<Renderer>().material = lastMaterial;
+        
+        //lastRayCastted.GetComponent<Renderer>().material = lastMaterial;
         lastRayCastted.transform.parent.GetComponent<Building>().isMoving = false;
-        lastRayCastted.transform.GetComponent<BuildingCollider>().activate = false;
+        //lastRayCastted.transform.GetComponent<BuildingCollider>().activate = false;
+
+        foreach (Transform child in lastRayCastted.transform.parent)
+        {
+            if (child.tag == "Building")
+            {
+                child.GetComponent<Renderer>().material = lastMaterial;
+                child.GetComponent<BuildingCollider>().activate = false;
+            }
+                
+        }
         lastRayCastted = null;
     }
 
