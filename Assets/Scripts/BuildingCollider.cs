@@ -18,7 +18,6 @@ public class BuildingCollider : MonoBehaviour
     {
         if(other.tag =="Building" && activate)
         {
-
             transform.parent.GetComponent<Building>().SetDeployable(false);
             gameObject.GetComponent<Renderer>().material = materials[1];
             buildingManager.deployable = false;
@@ -29,7 +28,7 @@ public class BuildingCollider : MonoBehaviour
     {
         if (other.tag == "Building" && activate)
         {
-
+            Debug.Log("deployable");
             transform.parent.GetComponent<Building>().SetDeployable(true);
             gameObject.GetComponent<Renderer>().material = materials[0];
             buildingManager.deployable = true;

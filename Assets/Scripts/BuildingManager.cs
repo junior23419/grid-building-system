@@ -17,6 +17,8 @@ public class BuildingManager : MonoBehaviour
     GameObject movingTarget;
     GameObject lastRayCastted;
     Material lastMaterial;
+    Vector3 lastPos;
+    Quaternion lastRotation;
 
     void Start()
     {
@@ -99,6 +101,9 @@ public class BuildingManager : MonoBehaviour
                 hit.transform.gameObject.GetComponent<Renderer>().material = materials[mode == MODE.REMOVING ? 1 : 0];
                 if(mode == MODE.MOVING)
                 {
+                    lastPos = hit.transform.parent.position;
+                    lastRotation = hit.transform.parent.rotation;
+
                     hit.transform.parent.gameObject.GetComponent<Building>().isMoving = true;
                     hit.transform.GetComponent<BuildingCollider>().activate = true;
                 }
@@ -113,6 +118,12 @@ public class BuildingManager : MonoBehaviour
     
     private void ClearRemovingModeSetup()
     {
+        if(!deployable)
+        {
+            lastRayCastted.transform.parent.position = lastPos;
+            lastRayCastted.transform.parent.rotation = lastRotation;
+
+        }
         lastRayCastted.GetComponent<Renderer>().material = lastMaterial;
         lastRayCastted.transform.parent.GetComponent<Building>().isMoving = false;
         lastRayCastted.transform.GetComponent<BuildingCollider>().activate = false;
@@ -127,9 +138,9 @@ public class BuildingManager : MonoBehaviour
         }
         else if(mode == MODE.MOVING)
         {
-            if (!deployable)
-                return;
+
             ClearRemovingModeSetup();
+
         }
         else if(mode == MODE.REMOVING)
         {
@@ -137,6 +148,7 @@ public class BuildingManager : MonoBehaviour
             lastRayCastted = null;
         }
         SwitchMode(MODE.NONE);
+        deployable = true;
     }
 
     public void Rotate()

@@ -655,6 +655,7 @@ MonoBehaviour:
   materials:
   - {fileID: 2100000, guid: 871f2263db80e6e48a3a177e98b65ca2, type: 2}
   - {fileID: 2100000, guid: 9d22c69d5b72cd44283128478acb71f9, type: 2}
+  deployable: 1
 --- !u!1 &631314945
 GameObject:
   m_ObjectHideFlags: 0
@@ -807,7 +808,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: -3.6949265e-18, z: 1.061e-42, w: -3.0002453e-18}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
@@ -1747,9 +1748,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Rotate
-
-'
+  m_Text: Rotate
 --- !u!222 &1464552110
 CanvasRenderer:
   m_ObjectHideFlags: 0
